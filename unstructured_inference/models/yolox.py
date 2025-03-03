@@ -150,7 +150,26 @@ class UnstructuredYoloXModel(UnstructuredObjectDetectionModel):
             element_class_id_map=self.layout_classes,
             sources=np.array([Source.YOLOX] * sorted_dets.shape[0]),
         )
+    def deduplicate_detected_elements(
+        self,
+        elements,
+        min_text_size: int = 15,
+    ) -> Union[LayoutElements, List]:
+        """Deletes overlapping elements in a list of elements."""
+        
+        if len(elements) <= 1:
+            return elements
+            
+        # Check if elements is a list or a LayoutElements object
+        if isinstance(elements, list):
+            # If it's a list, just return it
+            return elements
 
+        cleaned_elements = []
+        groups = cast(list[LayoutElements], partition_groups_from_regions(elements))
+        for group in groups:
+            cleaned_elements.append(clean_layoutelements(group))
+        return LayoutElements.concatenate(cleaned_elements)    
 
 # Note: preprocess function was named preproc on original source
 
@@ -256,23 +275,3 @@ def nms(boxes, scores, nms_thr):
 
     return keep
 
-def deduplicate_detected_elements(
-    self,
-    elements,
-    min_text_size: int = 15,
-) -> Union[LayoutElements, List]:
-    """Deletes overlapping elements in a list of elements."""
-    
-    if len(elements) <= 1:
-        return elements
-        
-    # Check if elements is a list or a LayoutElements object
-    if isinstance(elements, list):
-        # If it's a list, just return it
-        return elements
-
-    cleaned_elements = []
-    groups = cast(list[LayoutElements], partition_groups_from_regions(elements))
-    for group in groups:
-        cleaned_elements.append(clean_layoutelements(group))
-    return LayoutElements.concatenate(cleaned_elements)
