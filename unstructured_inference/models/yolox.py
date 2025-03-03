@@ -2,7 +2,15 @@
 # Unstructured modified the original source code found at:
 # https://github.com/Megvii-BaseDetection/YOLOX/blob/237e943ac64aa32eb32f875faa93ebb18512d41d/yolox/data/data_augment.py
 # https://github.com/Megvii-BaseDetection/YOLOX/blob/ac379df3c97d1835ebd319afad0c031c36d03f36/yolox/utils/demo_utils.py
+from typing import Dict, Final, List, Optional, Union, cast
 
+# Remove any layoutelement import if it's already there
+from unstructured_inference.inference.layoutelement import (
+    LayoutElement, 
+    LayoutElements,
+    partition_groups_from_regions,
+    clean_layoutelements
+)
 import cv2
 import numpy as np
 import onnxruntime
@@ -247,3 +255,24 @@ def nms(boxes, scores, nms_thr):
         order = order[inds + 1]
 
     return keep
+
+def deduplicate_detected_elements(
+    self,
+    elements,
+    min_text_size: int = 15,
+) -> Union[LayoutElements, List]:
+    """Deletes overlapping elements in a list of elements."""
+    
+    if len(elements) <= 1:
+        return elements
+        
+    # Check if elements is a list or a LayoutElements object
+    if isinstance(elements, list):
+        # If it's a list, just return it
+        return elements
+
+    cleaned_elements = []
+    groups = cast(list[LayoutElements], partition_groups_from_regions(elements))
+    for group in groups:
+        cleaned_elements.append(clean_layoutelements(group))
+    return LayoutElements.concatenate(cleaned_elements)
