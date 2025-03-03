@@ -20,7 +20,15 @@ from unstructured_inference.utils import (
     LazyEvaluateInfo,
     download_if_needed_and_get_local_path,
 )
+from typing import Dict, Final, List, Optional, Union, cast
 
+# Add these imports
+from unstructured_inference.inference.layoutelement import (
+    LayoutElement, 
+    LayoutElements,
+    partition_groups_from_regions,
+    clean_layoutelements
+)
 onnxruntime.set_default_logger_severity(logger_onnx.getEffectiveLevel())
 
 DEFAULT_LABEL_MAP: Final[Dict[int, str]] = {
@@ -175,3 +183,23 @@ class UnstructuredDetectronONNXModel(UnstructuredObjectDetectionModel):
 
         regions.sort(key=lambda element: element.bbox.y1)
         return cast(List[LayoutElement], regions)
+    def deduplicate_detected_elements(
+        self,
+        elements,
+        min_text_size: int = 15,
+    ) -> Union[layoutelement.LayoutElements, List]:
+        """Deletes overlapping elements in a list of elements."""
+        
+        if len(elements) <= 1:
+            return elements
+            
+        # Check if elements is a list or a LayoutElements object
+        if isinstance(elements, list):
+            # If it's a list, just return it
+            return elements
+
+        cleaned_elements = []
+        groups = cast(list[layoutelement.LayoutElements], layoutelement.partition_groups_from_regions(elements))
+        for group in groups:
+            cleaned_elements.append(layoutelement.clean_layoutelements(group))
+        return layoutelement.LayoutElements.concatenate(cleaned_elements)
