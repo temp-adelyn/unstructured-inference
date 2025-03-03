@@ -380,11 +380,17 @@ def table_cells_to_dataframe(
     return DataFrame(arr, columns=header)
 
 
-def partition_groups_from_regions(regions: TextRegions) -> List[TextRegions]:
+def partition_groups_from_regions(regions) -> List[TextRegions]:
     """Partitions regions into groups of regions based on proximity. Returns list of lists of
     regions, each list corresponding with a group"""
     if len(regions) == 0:
         return []
+        
+    # Check if regions has element_coords attribute
+    if not hasattr(regions, 'element_coords'):
+        # If not, it's probably a list, so return it as a single group
+        return [regions]
+        
     padded_coords = regions.element_coords.copy().astype(float)
     v_pad = (regions.y2 - regions.y1) * inference_config.ELEMENTS_V_PADDING_COEF
     h_pad = (regions.x2 - regions.x1) * inference_config.ELEMENTS_H_PADDING_COEF

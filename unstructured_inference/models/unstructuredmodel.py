@@ -167,24 +167,26 @@ class UnstructuredObjectDetectionModel(UnstructuredModel):
         final_elements.sort(key=lambda e: e.bbox.y1)
         return final_elements
 
-    def deduplicate_detected_elements(
-        self,
-        elements: LayoutElements,
-        min_text_size: int = 15,
-    ) -> LayoutElements:
-        """Deletes overlapping elements in a list of elements."""
+def deduplicate_detected_elements(
+    self,
+    elements,
+    min_text_size: int = 15,
+) -> Union[LayoutElements, List]:
+    """Deletes overlapping elements in a list of elements."""
+    
+    if len(elements) <= 1:
+        return elements
+        
+    # Check if elements is a list or a LayoutElements object
+    if isinstance(elements, list):
+        # If it's a list, just return it
+        return elements
 
-        if len(elements) <= 1:
-            return elements
-
-        cleaned_elements = []
-        # TODO: Delete nested elements with low or None probability
-        # TODO: Keep most confident
-        # TODO: Better to grow horizontally than vertically?
-        groups = cast(list[LayoutElements], partition_groups_from_regions(elements))
-        for group in groups:
-            cleaned_elements.append(clean_layoutelements(group))
-        return LayoutElements.concatenate(cleaned_elements)
+    cleaned_elements = []
+    groups = cast(list[LayoutElements], partition_groups_from_regions(elements))
+    for group in groups:
+        cleaned_elements.append(clean_layoutelements(group))
+    return LayoutElements.concatenate(cleaned_elements)
 
 
 class UnstructuredElementExtractionModel(UnstructuredModel):

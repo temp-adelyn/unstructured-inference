@@ -179,7 +179,7 @@ class PageLayout:
         self,
         inplace: bool = True,
         array_only: bool = False,
-    ) -> Optional[List[LayoutElement]]:
+    ) -> Optional[List[layoutelement.LayoutElement]]:
         """Uses specified model to detect the elements on the page."""
         if self.detection_model is None:
             model = get_model()
@@ -188,10 +188,8 @@ class PageLayout:
             else:
                 raise NotImplementedError("Default model should be a detection model")
 
-        # NOTE(mrobinson) - We'll want make this model inference step some kind of
-        # remote call in the future.
         assert self.image is not None
-        inferred_layout: LayoutElements = self.detection_model(self.image)
+        inferred_layout = self.detection_model(self.image)
         inferred_layout = self.detection_model.deduplicate_detected_elements(
             inferred_layout,
         )
@@ -199,20 +197,13 @@ class PageLayout:
         if inplace:
             self.elements_array = inferred_layout
             if not array_only:
-                self.elements = inferred_layout.as_list()
+                if hasattr(inferred_layout, 'as_list'):
+                    self.elements = inferred_layout.as_list()
+                else:
+                    self.elements = inferred_layout
             return None
 
-        return inferred_layout.as_list()
-
-    def _get_image_array(self) -> Union[np.ndarray[Any, Any], None]:
-        """Converts the raw image into a numpy array."""
-        if self.image_array is None:
-            if self.image:
-                self.image_array = np.array(self.image)
-            else:
-                image = Image.open(self.image_path)  # type: ignore
-                self.image_array = np.array(image)
-        return self.image_array
+        return inferred_layout.as_list() if hasattr(inferred_layout, 'as_list') else inferred_layout
 
     def annotate(
         self,
